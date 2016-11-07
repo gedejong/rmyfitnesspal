@@ -1,0 +1,21 @@
+---
+title: "Rmyfitnesspal"
+author: "Edwin de Jong"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Quick start
+
+Rmyfitnesspal allows you to import your myfitnesspal measurements. Usage is very simple:
+
+```
+library(rmyfitnesspal)
+context <- getContext("username", "password")
+measurements <- getMeasurements(context, from = ymd(20150101), to = now())
+summary(measurements)
+```

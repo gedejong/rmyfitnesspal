@@ -58,6 +58,7 @@ get_auth_data <- function() {
 
     content(result, "parsed")
 }
+
 ##' Retrieves user data from MyFitnessPall
 ##'
 ##' Given a context object, retrieves user data.
