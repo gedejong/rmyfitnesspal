@@ -7,7 +7,7 @@
 get_auth_data()
 }
 \value{
-A list structure containing authentication data.
+List structure containing authentication data.
 }
 \description{
 Retrieves authentication data from MFP, using the session cookie after a succesful login.

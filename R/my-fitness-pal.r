@@ -1,22 +1,24 @@
-base_url <- 'https://www.myfitnesspal.com/'
-base_api_url <- 'https://api.myfitnesspal.com/'
-login_path <- 'account/login'
+base_url <- "https://www.myfitnesspal.com/"
+base_api_url <- "https://api.myfitnesspal.com/"
+login_path <- "account/login"
 
-#' Retrieve a MFP (myfitnesspal) context object to retrieve authenticated data from myfitnesspal
+#' Retrieve a MFP (myfitnesspal) context object to retrieve authenticated data from myfitnesspal.
 #'
-#' @param username Username of the account
-#' @param password The password of the account
+#' @param username Username of the account. Not the email address, but the username found in your profile.
+#' @param password Password of the account
 #' 
 #' @title Get context for MFP
 #' @export
 #' @importFrom grDevices rgb
-#' @return A list containing authentication and user data
+#' @return List containing authentication and user data
 mfp_context <- function(username, password)
 {
     login_url <- paste0(base_url, login_path, sep="")
     response <- httr::GET(
         login_url,
-        httr::add_headers("user-agent" = "Mozilla/5.0", "Cache-Control" = "no-cache"))
+        httr::add_headers(
+                 "user-agent" = "Mozilla/5.0",
+                 "Cache-Control" = "no-cache"))
     document <- httr::content(response, "parsed")
     auth_token <- xml2::xml_text(xml2::xml_find_first(document, "(//input[@name='authenticity_token']/@value)[1]"))
     utf8_field <- xml2::xml_text(xml2::xml_find_first(document, "(//input[@name='utf8']/@value)[1]"))
@@ -39,11 +41,11 @@ mfp_context <- function(username, password)
     context
 }
 
-##' Retrieves authentication data
-##'
-##' Retrieves authentication data from MFP, using the session cookie after a succesful login.
-##' @return A list structure containing authentication data.
-##' @author Edwin De Jong
+#' Retrieves authentication data
+#'
+#' Retrieves authentication data from MFP, using the session cookie after a succesful login.
+#' @return List structure containing authentication data.
+#' @author Edwin De Jong
 get_auth_data <- function() {
     result <- get_request_for_url(
             paste0(base_url, "user/auth_token", "?refresh=true"), hdrs=c("Accept" = "application/json"))
@@ -53,19 +55,19 @@ get_auth_data <- function() {
     httr::content(result, "parsed")
 }
 
-##' Retrieves user data from MyFitnessPall
-##'
-##' Given a context object, retrieves user data.
-##' @title Retrieve user data
-##' @param context The context object containing authentication data
-##' @return A list
-##' @author Edwin De Jong
+#' Retrieves user data from MyFitnessPall
+#'
+#' Given a context object, retrieves user data.
+#' @title Retrieve user data
+#' @param context Context object containing authentication data
+#' @return List containing user data
+#' @author Edwin De Jong
 get_user_data <- function(context) {
     requested_fields <- c(
-        'diary_preferences', 'goal_preferences', 'unit_preferences',
-        'paid_subscriptions', 'account', 'goal_displays',
-        'location_preferences', 'system_data', 'profiles',
-        'step_sources')
+        "diary_preferences", "goal_preferences", "unit_preferences",
+        "paid_subscriptions", "account", "goal_displays",
+        "location_preferences", "system_data", "profiles",
+        "step_sources")
 
     fields_part <-  "fields%5B%5D=diary_preferences&fields%5B%5D=goal_preferences&fields%5B%5D=unit_preferences&fields%5B%5D=paid_subscriptions&fields%5B%5D=account&fields%5B%5D=goal_displays&fields%5B%5D=location_preferences&fields%5B%5D=system_data&fields%5B%5D=profiles&fields%5B%5D=step_sources"
     
@@ -75,6 +77,7 @@ get_user_data <- function(context) {
 
     httr::content(result,  "parsed")
 }
+
 get_request_for_url <- function(url, context = NA, hdrs=character(length = 0), ...) {
     if (!is.na(context[1])) {
         hdrs <- append(hdrs, c(
@@ -124,21 +127,21 @@ get_measurements_from_table <- function(table)
 get_dates_from_table <- function(table)
     do.call(c, lapply(table, function(tr) lubridate::mdy(xml2::xml_text(xml2::xml_children(tr)[2]))))
 
-##' Retrieves measurements of a specific type from myfitnesspal within a given time interval.
-##'
-##' Retrieves MFP measurements of the given measurement type within the given date interval using
-##' a series of HTTP requests and scraping the measurement from each table.
-##' @title Retrieve MFP measurements
-##' @param context The context object, containing authentication information.
-##' @param measurement The type of measurement to retrieve, for example "Weight" or "Waist"
-##' @param upper_bound The upper bound of measurements as a POSIXct object
-##' @param lower_bound The lower bound of measurements as a POSIXct object
-##' @return A dataframe containing two vectors: "dates" and "measurements"
-##' @export
-##' @author Edwin De Jong
+#' Retrieves measurements of a specific type from myfitnesspal within a given time interval.
+#'
+#' Retrieves MFP measurements of the given measurement type within the given date interval using
+#' a series of HTTP requests and scraping the measurement from each table.
+#' @title Retrieve MFP measurements
+#' @param context MFP context object, containing authentication information.
+#' @param measurement Type of measurement to retrieve, for example "Weight" or "Waist"
+#' @param upper_bound Upper bound of measurements as a POSIXct object
+#' @param lower_bound Lower bound of measurements as a POSIXct object
+#' @return Dataframe containing two vectors: "dates" and "measurements"
+#' @export
+#' @author Edwin De Jong
 mfp_measurements <- function(
                      context,
-                     measurement='Weight',
+                     measurement="Weight",
                      upper_bound=lubridate::now(),
                      lower_bound=upper_bound - lubridate::days(30))
 {

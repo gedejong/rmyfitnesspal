@@ -7,10 +7,10 @@
 get_user_data(context)
 }
 \arguments{
-\item{context}{The context object containing authentication data}
+\item{context}{Context object containing authentication data}
 }
 \value{
-A list
+List containing user data
 }
 \description{
 Retrieves user data from MyFitnessPall
