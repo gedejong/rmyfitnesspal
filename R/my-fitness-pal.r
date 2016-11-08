@@ -1,8 +1,8 @@
-baseUrl <- 'https://www.myfitnesspal.com/'
-baseAPIUrl <- 'https://api.myfitnesspal.com/'
-loginPath <- 'account/login'
+base_url <- 'https://www.myfitnesspal.com/'
+base_api_url <- 'https://api.myfitnesspal.com/'
+login_path <- 'account/login'
 
-#' Retrieve a context object to retrieve authenticated data from myfitnesspal
+#' Retrieve a MFP (myfitnesspal) context object to retrieve authenticated data from myfitnesspal
 #'
 #' @param username Username of the account
 #' @param password The password of the account
@@ -11,16 +11,16 @@ loginPath <- 'account/login'
 #' @export
 #' @importFrom grDevices rgb
 #' @return A list containing authentication and user data
-getContext <- function(username, password)
+mfp_context <- function(username, password)
 {
-    loginUrl <- paste0(baseUrl, loginPath, sep="")
+    login_url <- paste0(base_url, login_path, sep="")
     response <- httr::GET(
-        loginUrl,
+        login_url,
         httr::add_headers("user-agent" = "Mozilla/5.0", "Cache-Control" = "no-cache"))
     document <- httr::content(response, "parsed")
     auth_token <- xml2::xml_text(xml2::xml_find_first(document, "(//input[@name='authenticity_token']/@value)[1]"))
     utf8_field <- xml2::xml_text(xml2::xml_find_first(document, "(//input[@name='utf8']/@value)[1]"))
-    response2 <- httr::POST(loginUrl, body=list(
+    response2 <- httr::POST(login_url, body=list(
                 "utf8" = utf8_field,
                 "authenticity_token" = auth_token,
                 "username" = username,
@@ -29,10 +29,11 @@ getContext <- function(username, password)
     if (httr::http_status(response2)$category != "Success")
         stop("Incorrect username or password")
 
-    parsedResponse <- httr::content(response2, "text")
-    if (length(grep("Incorrect username or password", parsedResponse)))
+    parsed_response <- httr::content(response2, "text")
+    if (length(grep("Incorrect username or password", parsed_response)))
         stop("Incorrect username or password")
 
+    context <- c()
     context$auth_data <- get_auth_data()
     context$user_data <- get_user_data(context)
     context
@@ -45,7 +46,7 @@ getContext <- function(username, password)
 ##' @author Edwin De Jong
 get_auth_data <- function() {
     result <- get_request_for_url(
-            paste0(baseUrl, "user/auth_token", "?refresh=true"), hdrs=c("Accept" = "application/json"))
+            paste0(base_url, "user/auth_token", "?refresh=true"), hdrs=c("Accept" = "application/json"))
     if (httr::http_status(result)$category != "Success")
         stop(paste("Unable to fetch authentication token from MyFitnessPal: "))
 
@@ -68,7 +69,7 @@ get_user_data <- function(context) {
 
     fields_part <-  "fields%5B%5D=diary_preferences&fields%5B%5D=goal_preferences&fields%5B%5D=unit_preferences&fields%5B%5D=paid_subscriptions&fields%5B%5D=account&fields%5B%5D=goal_displays&fields%5B%5D=location_preferences&fields%5B%5D=system_data&fields%5B%5D=profiles&fields%5B%5D=step_sources"
     
-    metadata_url <- paste0(baseAPIUrl, "v2/users/", context$auth_data$user_id, "?", fields_part)
+    metadata_url <- paste0(base_api_url, "v2/users/", context$auth_data$user_id, "?", fields_part)
     result <- get_request_for_url(metadata_url, context=context, hdrs=c(Accept = "application/json"))
     httr::stop_for_status(result)
 
@@ -94,7 +95,7 @@ get_document_for_url <- function(url, context) {
 }
 
 get_url_for_measurements <- function(page = 1, measurement_id = 1) {
-    paste0(baseUrl, "measurements/edit", "?page=", page, "&type=", measurement_id)
+    paste0(base_url, "measurements/edit", "?page=", page, "&type=", measurement_id)
 }
 
 get_measurement_ids <- function(document)
@@ -110,14 +111,20 @@ get_numeric <- function(str) as.numeric(sub("[^0-9.]+", "", str))
 get_table_from_document <- function(document) {
     # find the tr element for each measurement entry on the page
     trs <- xml2::xml_find_all(document, "//table[contains(@class,'check-in')]/tbody/tr")
-    if (any(grepl("No measurements found.", xml2::xml_text(trs)))) c() else trs
+    if (any(grepl("No measurements found.", xml2::xml_text(trs)))) {
+        c()
+    } else {
+        trs
+    }
 }
 
-get_measurements_from_table <- function(table) sapply(table, function(tr) get_numeric(xml2::xml_text(xml2::xml_children(tr)[3])))
+get_measurements_from_table <- function(table)
+    sapply(table, function(tr) get_numeric(xml2::xml_text(xml2::xml_children(tr)[3])))
 
-get_dates_from_table <- function(table) do.call(c, lapply(table, function(tr) lubridate::mdy(xml2::xml_text(xml2::xml_children(tr)[2]))))
+get_dates_from_table <- function(table)
+    do.call(c, lapply(table, function(tr) lubridate::mdy(xml2::xml_text(xml2::xml_children(tr)[2]))))
 
-##' Retrieves measurements from myfitnesspal.
+##' Retrieves measurements of a specific type from myfitnesspal within a given time interval.
 ##'
 ##' Retrieves MFP measurements of the given measurement type within the given date interval using
 ##' a series of HTTP requests and scraping the measurement from each table.
@@ -129,7 +136,7 @@ get_dates_from_table <- function(table) do.call(c, lapply(table, function(tr) lu
 ##' @return A dataframe containing two vectors: "dates" and "measurements"
 ##' @export
 ##' @author Edwin De Jong
-get_measurements <- function(
+mfp_measurements <- function(
                      context,
                      measurement='Weight',
                      upper_bound=lubridate::now(),
