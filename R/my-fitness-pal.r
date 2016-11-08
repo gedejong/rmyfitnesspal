@@ -1,7 +1,3 @@
-library(httr)
-library(xml2)
-library(lubridate)
-
 baseUrl <- 'https://www.myfitnesspal.com/'
 baseAPIUrl <- 'https://api.myfitnesspal.com/'
 loginPath <- 'account/login'
@@ -15,28 +11,25 @@ loginPath <- 'account/login'
 #' @export
 #' @importFrom grDevices rgb
 #' @return A list containing authentication and user data
-#'
-#' @examples
-#' context <- getContext("username", "password")
 getContext <- function(username, password)
 {
     loginUrl <- paste0(baseUrl, loginPath, sep="")
-    response <- GET(
+    response <- httr::GET(
         loginUrl,
-        add_headers("user-agent" = "Mozilla/5.0", "Cache-Control" = "no-cache"))
-    document <- content(response, "parsed")
-    auth_token <- xml_text(xml_find_first(document, "(//input[@name='authenticity_token']/@value)[1]"))
-    utf8_field <- xml_text(xml_find_first(document, "(//input[@name='utf8']/@value)[1]"))
-    response2 <- POST(loginUrl, body=list(
+        httr::add_headers("user-agent" = "Mozilla/5.0", "Cache-Control" = "no-cache"))
+    document <- httr::content(response, "parsed")
+    auth_token <- xml2::xml_text(xml2::xml_find_first(document, "(//input[@name='authenticity_token']/@value)[1]"))
+    utf8_field <- xml2::xml_text(xml2::xml_find_first(document, "(//input[@name='utf8']/@value)[1]"))
+    response2 <- httr::POST(loginUrl, body=list(
                 "utf8" = utf8_field,
                 "authenticity_token" = auth_token,
                 "username" = username,
                 "password" = password),
-        add_headers("user-agent" = "Mozilla/5.0", "Cache-Control" = "no-cache"))
-    if (http_status(response2)$category != "Success")
+        httr::add_headers("user-agent" = "Mozilla/5.0", "Cache-Control" = "no-cache"))
+    if (httr::http_status(response2)$category != "Success")
         stop("Incorrect username or password")
 
-    parsedResponse <- content(response2, "text")
+    parsedResponse <- httr::content(response2, "text")
     if (length(grep("Incorrect username or password", parsedResponse)))
         stop("Incorrect username or password")
 
@@ -53,10 +46,10 @@ getContext <- function(username, password)
 get_auth_data <- function() {
     result <- get_request_for_url(
             paste0(baseUrl, "user/auth_token", "?refresh=true"), hdrs=c("Accept" = "application/json"))
-    if (http_status(result)$category != "Success")
+    if (httr::http_status(result)$category != "Success")
         stop(paste("Unable to fetch authentication token from MyFitnessPal: "))
 
-    content(result, "parsed")
+    httr::content(result, "parsed")
 }
 
 ##' Retrieves user data from MyFitnessPall
@@ -77,9 +70,9 @@ get_user_data <- function(context) {
     
     metadata_url <- paste0(baseAPIUrl, "v2/users/", context$auth_data$user_id, "?", fields_part)
     result <- get_request_for_url(metadata_url, context=context, hdrs=c(Accept = "application/json"))
-    stop_for_status(result)
+    httr::stop_for_status(result)
 
-    content(result,  "parsed")
+    httr::content(result,  "parsed")
 }
 get_request_for_url <- function(url, context = NA, hdrs=character(length = 0), ...) {
     if (!is.na(context[1])) {
@@ -91,13 +84,13 @@ get_request_for_url <- function(url, context = NA, hdrs=character(length = 0), .
     hdrs <- append(hdrs, c(
                             "user-agent" = "Mozilla/5.0",
                             "Cache-Control" = "no-cache"))
-    GET(url, add_headers(.headers=hdrs))
+    httr::GET(url, httr::add_headers(.headers=hdrs))
 }
 
 get_document_for_url <- function(url, context) {
     response <- get_request_for_url(url, context = context)
-    stop_for_status(response)
-    content(response, "parsed")
+    httr::stop_for_status(response)
+    httr::content(response, "parsed")
 }
 
 get_url_for_measurements <- function(page = 1, measurement_id = 1) {
@@ -106,9 +99,9 @@ get_url_for_measurements <- function(page = 1, measurement_id = 1) {
 
 get_measurement_ids <- function(document)
 {
-    options <- xml_find_all(document, "//select[@id='type']/option")
-    os <- sapply(options, function(o) xml_attr(o, "value"))
-    names(os) <- sapply(options, function(o) xml_text(o))
+    options <- xml2::xml_find_all(document, "//select[@id='type']/option")
+    os <- sapply(options, function(o) xml2::xml_attr(o, "value"))
+    names(os) <- sapply(options, function(o) xml2::xml_text(o))
     os
 }
 
@@ -116,13 +109,13 @@ get_numeric <- function(str) as.numeric(sub("[^0-9.]+", "", str))
 
 get_table_from_document <- function(document) {
     # find the tr element for each measurement entry on the page
-    trs <- xml_find_all(document, "//table[contains(@class,'check-in')]/tbody/tr")
-    if (any(grepl("No measurements found.", xml_text(trs)))) c() else trs
+    trs <- xml2::xml_find_all(document, "//table[contains(@class,'check-in')]/tbody/tr")
+    if (any(grepl("No measurements found.", xml2::xml_text(trs)))) c() else trs
 }
 
-get_measurements_from_table <- function(table) sapply(table, function(tr) get_numeric(xml_text(xml_children(tr)[3])))
+get_measurements_from_table <- function(table) sapply(table, function(tr) get_numeric(xml2::xml_text(xml2::xml_children(tr)[3])))
 
-get_dates_from_table <- function(table) do.call(c, lapply(table, function(tr) mdy(xml_text(xml_children(tr)[2]))))
+get_dates_from_table <- function(table) do.call(c, lapply(table, function(tr) lubridate::mdy(xml2::xml_text(xml2::xml_children(tr)[2]))))
 
 ##' Retrieves measurements from myfitnesspal.
 ##'
@@ -138,8 +131,8 @@ get_dates_from_table <- function(table) do.call(c, lapply(table, function(tr) md
 get_measurements <- function(
                      context,
                      measurement='Weight',
-                     upper_bound=now(),
-                     lower_bound=upper_bound - days(30))
+                     upper_bound=lubridate::now(),
+                     lower_bound=upper_bound - lubridate::days(30))
 {
     # get the URL for the main check in page
     document <- get_document_for_url(get_url_for_measurements(), context = context)
@@ -157,7 +150,7 @@ get_measurements <- function(
 
     repeat {
         document <- get_document_for_url(
-            get_url_for_measurements(page = page, measurement = measurement_id),
+            get_url_for_measurements(page = page, measurement_id = measurement_id),
             context = context)
         table <- get_table_from_document(document)
 

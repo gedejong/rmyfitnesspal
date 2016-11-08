@@ -6,10 +6,18 @@ Authors@R: c(person("Edwin de Jong", "Developer", role = c("aut", "cre"),
     email = "edejong@fastmail.fm"))
 Author: Edwin de Jong[aut, cre],
 Maintainer: Edwin de Jong <edejong@fastmail.fm>
-Depends: R (>= 3.1.0)
-Description: Retrieves and parses collected data from MyFitnessPal, based on a Python with similar functionality: https://github.com/coddingtonbear/python-myfitnesspal
+Depends:
+    R (>= 3.1.0)
+Imports:
+    httr,
+    xml2,
+    lubridate
+Description: Retrieves and parses collected data from MyFitnessPal, based on
+    a Python library with similar functionality.
 License: GPL (>= 2)
 URL: https://www.r-project.org
-Suggests: knitr,
+Suggests:
+    knitr,
     rmarkdown
 VignetteBuilder: knitr
+RoxygenNote: 5.0.1
