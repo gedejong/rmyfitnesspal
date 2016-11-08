@@ -127,6 +127,7 @@ get_dates_from_table <- function(table) do.call(c, lapply(table, function(tr) lu
 ##' @param upper_bound The upper bound of measurements as a POSIXct object
 ##' @param lower_bound The lower bound of measurements as a POSIXct object
 ##' @return A dataframe containing two vectors: "dates" and "measurements"
+##' @export
 ##' @author Edwin De Jong
 get_measurements <- function(
                      context,
