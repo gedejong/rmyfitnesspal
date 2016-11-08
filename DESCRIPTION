@@ -9,9 +9,9 @@ Maintainer: Edwin de Jong <edejong@fastmail.fm>
 Depends:
     R (>= 3.1.0)
 Imports:
-    httr,
-    xml2,
-    lubridate
+    httr (>= 1.2.0),
+    xml2 (>= 1.0.0),
+    lubridate (>= 1.6.0)
 Description: Retrieves and parses collected data from MyFitnessPal, based on
     a Python library with similar functionality.
 License: GPL (>= 2)
@@ -19,5 +19,6 @@ URL: https://www.r-project.org
 Suggests:
     knitr,
     rmarkdown
+BugReports: https://github.com/gedejong/rmyfitnesspal/issues
 VignetteBuilder: knitr
 RoxygenNote: 5.0.1
