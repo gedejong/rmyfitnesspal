@@ -11,7 +11,7 @@ Depends:
 Imports:
     httr (>= 1.2.0),
     xml2 (>= 1.0.0),
-    lubridate (>= 1.6.0)
+    lubridate (>= 1.5.0)
 Description: Retrieves and parses collected data from MyFitnessPal, based on
     a Python library with similar functionality.
 License: GPL (>= 2)
