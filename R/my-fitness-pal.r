@@ -178,3 +178,103 @@ mfp_measurements <- function(
     df <- data.frame(measurements, dates)
     df[df$dates <= upper_bound & df$dates >= lower_bound,]
 }
+
+get_url_for_diary = function(
+              upper_bound = lubridate::now(),
+              lower_bound = upper_bound - lubridate::days(300)) {
+    from <- format(lower_bound, "%Y-%m-%d")
+    to <- format(upper_bound, "%Y-%m-%d")
+
+    paste0(base_url, "reports/printable_diary", "?from=", from, "&to=", to)
+}
+
+getNthMeasurement <- function(node, idx) {
+    el <- xml2::xml_find_first(node, paste0("tfoot/tr/td[", idx, "]/text()"))
+    if (length(el) == 0) {
+        return(NA)
+    } else {
+        ret <- get_numeric(xml2::xml_text(el))
+        if (ret == 0) return(NA) else return(ret)
+    }
+}
+
+##' Retrieves a MFP diary of foods and exercises.
+##'
+##' With this function and an active context, a diary within a certain time-frame can
+##' be downloaded and inserted into a dataframe. The data-frame contains rows with the
+##' date, exercise information and food information. 
+##'
+##' @title Retrieve MFP diary
+##' @param context The context object (can be retrieved using mfp_context)
+##' @param upper_bound The upper bound of the diary retrieved
+##' @param lower_bound The lower bound of the diary retrieved
+##' @return A data.frame with the diary entries.
+##' @author Edwin De Jong
+mfp_diary = function(
+              context,
+              upper_bound = lubridate::now(),
+              lower_bound = upper_bound - lubridate::days(300)) {
+
+    document <- get_document_for_url(
+        get_url_for_diary(lower_bound = lower_bound, upper_bound = upper_bound),
+        context = context)
+
+    # Find all elements which contain useful data
+    content_elements <- xml2::xml_find_all(
+        document,
+        "//h2[@class='main-title-2'] | //table[@class='table0']")
+
+    if (length(content_elements) == 0) {
+        stop("Could not find content element")
+    }
+
+    # Number of dates found
+    n <- length(xml2::xml_find_all(document, "//h2[@class='main-title-2']")) - 1
+
+    df <- data.frame(
+        date = as.POSIXct(integer(n), origin=lubridate::now()),
+        caloriesBurned = numeric(n) * NA,
+        minutes = numeric(n) * NA,
+        sets = numeric(n) * NA,
+        weights = numeric(n) * NA,
+        caloriesTaken = numeric(n) * NA,
+        carbs = numeric(n) * NA,
+        fat = numeric(n) * NA,
+        protein = numeric(n) * NA,
+        cholesterol = numeric(n) * NA,
+        sodium = numeric(n) * NA,
+        sugars = numeric(n) * NA,
+        fibers = numeric(n) * NA
+    )
+
+    i <- -1 
+    for (node in content_elements) {
+        if (xml2::xml_attr(node, "id") == "date") {
+            # Found a date header
+            i <- i + 1
+            df$date[i] <- lubridate::parse_date_time(xml2::xml_text(node), orders=c("B d, Y!"))
+        } else {
+            table_type <- xml2::xml_text(xml2::xml_find_first(node, "thead/tr/td[1]/text()"))
+            if (table_type == "Exercises") {
+                # Found an exercises table
+                df$caloriesBurned[i] <- getNthMeasurement(node, 2)
+                df$minutes[i] <- getNthMeasurement(node, 3)
+                df$sets[i] <- getNthMeasurement(node, 4)
+                df$weights[i] <- getNthMeasurement(node, 5)
+            }
+            if (table_type == "Foods") {
+                # Found an foods table
+                df$caloriesTaken[i] <- getNthMeasurement(node, 2)
+                df$carbs[i] <- getNthMeasurement(node, 3)
+                df$fat[i] <- getNthMeasurement(node, 4)
+                df$protein[i] <- getNthMeasurement(node, 5)
+                df$cholesterol[i] <- getNthMeasurement(node, 6)
+                df$sodium[i] <- getNthMeasurement(node, 7)
+                df$sugars[i] <- getNthMeasurement(node, 8)
+                df$fibers[i] <- getNthMeasurement(node, 9)
+            }
+        }
+    }
+    # Remove any empty columns (columns containing only NA)
+    df[, colSums(is.na(df)) != nrow(df)]
+}

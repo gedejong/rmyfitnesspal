@@ -1,4 +1,11 @@
 -----------
+Version 0.2
+===========
+
+### NEW FEATURES
+* Retrieve MPF diary
+
+-----------
 Version 0.1
 ===========
 

@@ -1,5 +1,5 @@
 Package: rmyfitnesspal
-Version: 0.1.0
+Version: 0.2.0
 Date: 2016-11-04
 Title: Data Retrieval for MyfitnessPal
 Authors@R: c(person("Edwin de Jong", "Developer", role = c("aut", "cre"),
