@@ -28,6 +28,7 @@ mfp_context <- function(username, password)
                 "username" = username,
                 "password" = password),
         httr::add_headers("user-agent" = "Mozilla/5.0", "Cache-Control" = "no-cache"))
+
     if (httr::http_status(response2)$category != "Success")
         stop("Incorrect username or password")
 

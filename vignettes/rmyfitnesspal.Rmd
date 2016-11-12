@@ -11,11 +11,25 @@ vignette: >
 
 # Quick start
 
-Rmyfitnesspal allows you to import your myfitnesspal measurements. Usage is very simple:
+Rmyfitnesspal allows you to import your myfitnesspal measurements. First of all, we need a
+context, which contains authentication information.
 
-```
+```r
 library(rmyfitnesspal)
-context <- getContext("username", "password")
-measurements <- getMeasurements(context, from = ymd(20150101), to = now())
+library(ggplot2)
+
+context <- mfp_context("username", "password")
+```
+
+This context object can be used to retrieve measurements:
+
+```r
+measurements <- mfp_measurements(context, from = ymd(20150101), to = now())
 summary(measurements)
+```
+
+or our diary:
+```r
+diary <- mfp_diary(context)
+summary(diary)
 ```
